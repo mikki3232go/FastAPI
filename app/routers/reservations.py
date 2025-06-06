@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from .. import models, schemas
 from ..database import get_db
 from fastapi.templating import Jinja2Templates
@@ -16,16 +16,37 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/new")
 async def new_reservation(
     request: Request,
-    facility_id: int,
+    facility_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
-    facility = db.query(models.Facility).filter(models.Facility.id == facility_id).first()
-    if not facility:
-        raise HTTPException(status_code=404, detail="Facility not found")
+    facility = None
+    facilities = None
     
+    if facility_id is not None:
+        facility = db.query(models.Facility).filter(models.Facility.id == facility_id).first()
+        if not facility:
+            raise HTTPException(status_code=404, detail="Facility not found")
+    else:
+        facilities = db.query(models.Facility).all()
+
     return templates.TemplateResponse(
         "reservations/new.html",
-        {"request": request, "facility": facility}
+        {"request": request, "facility": facility, "facilities": facilities}
+    )
+
+@router.get("/{reservation_id}/edit")
+async def edit_reservation(
+    request: Request,
+    reservation_id: int,
+    db: Session = Depends(get_db)
+):
+    reservation = db.query(models.Reservation).filter(models.Reservation.id == reservation_id).first()
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+
+    return templates.TemplateResponse(
+        "reservations/edit.html",
+        {"request": request, "reservation": reservation}
     )
 
 @router.get("/", response_model=List[schemas.Reservation])

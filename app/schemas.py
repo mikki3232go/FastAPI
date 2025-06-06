@@ -33,6 +33,7 @@ class ReservationBase(BaseModel):
     start_time: datetime
     end_time: datetime
     purpose: Optional[str] = None
+    capacity: int
 
 class ReservationCreate(ReservationBase):
     pass
